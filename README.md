@@ -1,2 +1,2 @@
 # algoritmo_gillespie
-Aplicaciones del algoritmo Gillespie para la simulación reacciones entre moléculas.
+Códigos de aplicación del algoritmo Gillespie para la simulación de sistemas químicos reactivos.
