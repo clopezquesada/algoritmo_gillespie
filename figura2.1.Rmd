@@ -156,12 +156,10 @@ grafico <- grafico + geom_line(lwd=0.7,data=datos_est,aes(x = t_muestreo, y = me
 grafico <- grafico + geom_line(lwd=0.7,data=out,aes(x = time, y = X,color="Solución"))
 
 # Añadimos título y nombre a los ejes, fijamos el eje y para poder observar que a mayor número de realizaciones más se acerca el valor de la media a la solución de la ecuación diferencial del modelo
-grafico <- grafico + ylim(0,50) 
-  + labs(title = "Modelo Malthus", x = "Tiempo (s)", y = " Número de individuos") 
-  + theme_minimal()
-  + theme(legend.title=element_blank(),legend.position = "bottom") 
-  + scale_color_manual(values = c("Solución" = "red", "Realizaciones"="grey", "Media"="blue", "Delta"="green" ))
+grafico <- grafico + ylim(0,50) + labs(title = NULL, x = "Tiempo (s)", y = " Número de individuos") +
+   theme_minimal() + theme(legend.title=element_blank(),legend.position = "bottom") +
+   scale_color_manual(values = c("Solución" = "red", "Realizaciones"="grey", "Media"="blue", "Delta"="green" ))
 
-# Usamos la función suppressWarnings() porque da error al imprimir porque se pierden datos al fijar el eje y
+# Usamos la función suppressWarnings() porque al fijar el eje y, al imprimir el gráfico da un error como que hay datos que se pierden
 suppressWarnings(print(grafico))
 ```
