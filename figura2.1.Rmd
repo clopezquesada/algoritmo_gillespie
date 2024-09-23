@@ -162,6 +162,6 @@ grafico <- grafico + ylim(0,50)
   + theme(legend.title=element_blank(),legend.position = "bottom") 
   + scale_color_manual(values = c("Solución" = "red", "Realizaciones"="grey", "Media"="blue", "Delta"="green" ))
 
-# Usamos la función suppressWarnings() porque al fijar el eje y, al imprimir el gráfico da un error como que hay datos que se pierden
+# Usamos la función suppressWarnings() porque da error al imprimir porque se pierden datos al fijar el eje y
 suppressWarnings(print(grafico))
 ```
