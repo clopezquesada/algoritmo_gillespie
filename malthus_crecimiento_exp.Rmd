@@ -1,0 +1,132 @@
+---
+title: "Malthus - Crecimiento exponencial"
+output: html_notebook
+---
+
+
+```{r}
+library("deSolve")
+library("ggplot2")
+library("tikzDevice")
+```
+
+Añadimos la función que calcula el siguiente tiempo de reacción de
+acuerdo a la fórmula $$
+  \tau=\frac{1}{a_0}\log\left(\frac{1}{r_1}\right)
+$$ donde $r1$ es un número aleatorio de la distribución uniforme en el
+intervalo unidad.
+
+```{r}
+tiempo_exponencial <- function(a0){
+  r1 <- runif(n=1,min=0,max=1)
+  return((1/a0)*log(1/r1))
+}
+```
+
+Definimos la EDO del modelo de Malthus que en dinámica logística
+determinista viene dado por: $$
+  \frac{dX}{dt}=rX, \quad X(0)=X_{0}
+$$ donde $X(t)$ es número de individuos de la población a tiempo $t$ y $r$
+es la tasa de proliferación neta. El único equilibrio de la ecuación es
+$X\equiv 0$, luego la condición inicial $X(0)=X_0$, si queremos una
+solución no trivial, debe ser mayor que cero. Consideramos el número de
+individuos de la población siempre positivo. Si la tasa de proliferación neta es
+postiva tenemos crecimiento exponencial de la población, por el contrario, si es
+negativa, la población se extinguirá.
+
+```{r}
+Malthus_EDO <- function(t,state,parameters){
+  with(as.list(c(state, parameters)), { 
+    dX <- r * X 
+    list(dX)
+  })
+}
+```
+
+La función Malthus() implementa, usando el algoritmo Gillespie, el enfoque
+estocástico de este modelo, partiendo de un estado inicial de la
+población $X_0>0$, presentamos cada transición junto con su propensidad correspondiente:
+
+-    Si $r>0$: $$
+      X \rightarrow X+1, \quad a=rX
+    $$ en este caso tenemos un crecimiento exponencial de la población,
+    como veremos gráficamente más abajo.
+
+-   Si $r<0$, el siguiente modelo produce una extinción de la población:
+    $$
+      X \rightarrow X-1, \quad a=|r|X
+    $$
+
+```{r}
+Malthus_Gillespie<-function(r,x0,t0,tf){
+    # Variable que guarda el estado del sistema para el conjunto de tiempos de muestreo
+    x_imprimir <- x0
+    # Variable auxiliar que recoge el estado del sistema en cada iteración
+    x <- x0
+    
+    # Cálculo de la propensidad
+    a <- abs(r)*x
+    
+    # Cuando la población se extinga, es decir, el estado del sistema sea 0, el siguiente tiempo de reacción es infinito, esto lo controlamos mediante la variable lógica extincion, que inicialmente se declara como FALSE
+    extincion <- FALSE
+    
+    # Variable temporal que avanza en función que van ocurriendo las reacciones, calculamos el primer tiempo de reacción
+    t <- t0
+    t_imprimir <- t0
+    
+    while(t<tf){
+      t<-t+tiempo_exponencial(a)
+      t_imprimir <- c(t_imprimir,t)
+      r2 <- runif(n=1, min=0, max=1)
+      if(r>0)
+        x <- x+1
+      else
+        x <- x-1
+      
+      # Para cada tiempo de muestreo, almacenamos el estado del sistema
+      x_imprimir <- c(x_imprimir,x)
+
+      a <- abs(r)*x
+      
+    }
+    
+    # Si se extingue la población cambiamos el valor de extincion a TRUE
+    if( x == 0 )
+      extincion <- TRUE
+    
+    datos <- data.frame(t_imprimir=t_imprimir,x_imprimir=x_imprimir,row.names = NULL)
+    
+    # Devolvemos una lista que nos indica si se ha extinguido la población y un vector que nos indica el estado del sistema para cada tiempo de muestreo
+    return(list(extincion = extincion, datos = datos))
+}
+```
+
+Mostramos una realización del algoritmo Gillespie para el modelo de Malthus con tasa de proliferación $r=0.1s^{-1}>0$ y población inicial $X_0=1$ individuo a lo largo de $t_f=30s$. Se pueden obtener todas las realizaciones que se estimen cambiando la variable n_realizaciones.
+
+```{r}
+# Definimos unos parámetros adecuados
+r <- 0.1
+x0 <- 1
+t0 <- 0
+tf <- 30
+n_realizaciones <- 1
+
+grafico <- ggplot()
+for (i in 1:n_realizaciones) {
+  res <- Malthus_Gillespie(r,x0,t0,tf)
+  imprimir <- res$datos
+  grafico <- grafico + geom_line(data = imprimir, aes(x = t_imprimir, y = x_imprimir,color="Realización"))
+}
+```
+
+```{r}
+
+grafico <- grafico +
+   labs(title = element_blank(), x = "Tiempo (s)", y = " Número de individuos") +
+   theme_minimal() +
+   theme(legend.title=element_blank(),legend.position = "bottom") + scale_color_manual(values = c("Realización"="grey" ), breaks = c("Realización"))
+
+print(grafico)
+```
+
+
