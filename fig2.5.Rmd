@@ -1,0 +1,181 @@
+---
+title: "Logística - Formulación 1"
+output: html_notebook
+---
+```{r}
+# La librería "deSolve" incluye funciones que resuelven ecuaciones diferenciales ordinarias
+library("deSolve")
+# Usaremos la librería "ggplot2" para imprimir gráficamente los resultados
+library("ggplot2")
+```
+
+Añadimos la función que calcula el siguiente tiempo de reacción de
+acuerdo a la fórmula $$
+  \tau=\frac{1}{a_0}\log\left(\frac{1}{r_1}\right)
+$$ donde $r1$ es un número aleatorio de la distribución uniforme en el
+intervalo unidad.
+
+```{r}
+tiempo_exponencial <- function(a0){
+  r1 <- runif(n=1,min=0,max=1)
+  return((1/a0)*log(1/r1))
+}
+```
+
+Definimos la EDO del modelo logístico:
+\[
+\frac{dX}{dt}=rX \left( 1-\frac{X}{k} \right)
+\]
+donde $X(t)$ indica el número de individuos de la población a tiempo $t$, $r>0$ 
+es la tasa de proliferación de la población y $K>0$ la capacidad de carga. 
+Los equilibrios de la ecuación diferencial son $X\equiv 0,K$, 
+además $X\equiv K$ es asintóticamente estable luego para cualquier $X_0>0$, 
+$X$ tenderá a $K$ cuando $t \to \infty$.
+
+```{r}
+Logistica_EDO <- function(t,state,parameters){
+  with(as.list(c(state, parameters)), { 
+    dX <- r * X *(1-X/k)
+    list(dX)
+  })
+}
+```
+
+
+La función Logistica1_Gillespie() devuelve la evolución temporal del número de 
+individuos de una población. Ésta implementa el algoritmo Gillespie
+para una de las formulaciones estocásticas del modelo:
+\[
+  X\rightarrow X+1, \quad a_{\text{nacimiento}}=rX
+\]
+\[
+  X\rightarrow X-1, \quad a_{\text{muerte}}=\frac{r}{K}X(X-1)
+\]
+
+```{r}
+
+Logistica1_Gillespie <- function(r,k,x0,t0,tf){
+  
+  # Variable espacial que almacena el estado del sistema en tras cada reacción
+  x <- x0
+  # Variable espacial
+  x_actual <- x0
+  
+  # Controlamos la extinción mediante una variable lógica
+  extincion <- FALSE
+  
+  # Variable temporal
+  t <- t0
+  # Variable que almacena todos los tiempos de reacción
+  t_imprimir <- t0
+  
+  # Cálculo de las propensidades individuales y de la propensidad total  
+  a <- c(r*x_actual,(r*x_actual*(x_actual-1))/2*k)
+  a0 <- sum(a)
+    
+  # Controlamos la extinción de la población mediante una variable lógica
+  extincion <- FALSE
+
+  while(t<tf){ 
+    
+    # Calculamos el siguiente tiempo de reacción
+    t <- t+tiempo_exponencial(a0)
+    # Almacenamos el siguiente tiempo de reacción
+    t_imprimir <- c(t_imprimir, t)
+    
+    if(t == Inf){
+      
+      x_actual <- 0
+    
+    }else{
+      
+      # Calculamos la siguiente reacción
+      r2 <- runif(n=1, min=0, max=1)
+      
+      if(a[1]>=r2*a0)
+        x_actual <- x_actual + 1
+      else
+        x_actual <- x_actual - 1
+      
+      # Calculamos las propensidades individuales y la propensidad total
+      a <- c(r*x_actual,r*x_actual*(x_actual-1)/k)
+      a0 <- sum(a)
+    
+      }
+  
+  
+    # Almacenamos el estado del sistema
+    x <- c(x,x_actual)
+  }
+  
+  
+  # Si la población se extingue cambiamos la variable extincion a TRUE
+  if(x_actual == 0)
+     extincion <- TRUE
+  
+  datos <- data.frame(t_imprimir=t_imprimir, x_imprimir=x, row.names = NULL)
+  
+  # Devolvemos una lista que nos indica si se ha extinguido la población 
+  # y una base de datos con la evolución temporal del sistema
+  return(list(extincion = extincion, datos = datos))
+}
+
+```
+
+Comparamos ahora el modelo estocástico con el modelo determinista para un número determinado de realizaciones.
+
+```{r}
+# Consideramos los parámetros adecuados
+r <- 0.1
+k <- 3
+x0 <- 11
+t0 <- 0
+tf <- 60
+
+# Número de realizaciones a realizar
+n_realizaciones <- 10
+
+# Inicializamos el gráfico en el que incluimos cada realización
+grafico <- ggplot()
+
+for (i in 1:n_realizaciones) {
+  realizacion <- Logistica1_Gillespie(r,k,x0,t0,tf)
+  if(realizacion$extincion)
+    warning(paste("Extinción de la población en la realización ", i))
+  imprimir <- realizacion$datos
+  grafico <- grafico + geom_line(data = imprimir, aes(x = t_imprimir, y = x_imprimir, color="Realizaciones"))
+}
+
+```
+
+
+```{r}
+int <- 0.05
+parameter <- c(r,k)
+state <- c(X=x0)
+times <- seq(t0,tf,by=int)
+
+# Resolvemos la EDO usando la función ode() de la librería "deSolve"
+out <- ode(y=state, times = times, func = Logistica_EDO, parms = parameter)
+
+# Convertimos el resultado de la función a una base de datos para poder representarlo gráficamente
+out <- data.frame(out)
+
+# Añadimos la solución de la EDO al gráfico
+grafico <- grafico + geom_line(lwd=0.7,data=out,aes(x = time, y = X, color="Sol. mod. det."))
+
+```
+
+
+```{r}
+grafico <- grafico +
+   labs(x = "Tiempo (s)", y = " Número de individuos") + 
+   theme_minimal() + coord_cartesian(xlim = c(0, 60)) +
+   theme(legend.title=element_blank(),legend.position = "bottom",
+        axis.title.x = element_text(size = 10),  
+        axis.title.y = element_text(size = 10)) +
+   scale_color_manual(values = c("Realizaciones"="gray", "Sol. mod. det." = "red"),
+                      breaks = c("Realizaciones", "Sol. mod. det."))
+
+print(grafico)
+```
