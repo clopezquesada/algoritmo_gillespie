@@ -1,5 +1,5 @@
 ---
-title: "Malthus - Crecimiento exponencial"
+title: "Malthus - Extinción"
 output: html_notebook
 ---
 
@@ -22,11 +22,11 @@ tiempo_exponencial <- function(a0){
 }
 ```
 
-Definimos la EDO del modelo de Malthus que en dinámica logística
-determinista viene dado por: $$
+Definimos la ecuación determinista del modelo de Malthus: $$
   \frac{dX}{dt}=rX, \quad X(0)=X_{0}>0,
 $$ donde $X(t)$ es número de individuos de la población a tiempo $t$ y $r$
-es la tasa de proliferación neta.
+es la tasa de proliferación neta. Consideramos $r<0$ para observar decaimiento
+exponencial.
 
 ```{r}
 Malthus_EDO <- function(t,state,parameters){
@@ -37,15 +37,16 @@ Malthus_EDO <- function(t,state,parameters){
 }
 ```
 
-La función Malthus_Gillespie() implementa el algoritmo de Gillespie para el 
-enfoque estocástico del modelo de Malthus, partiendo de un estado inicial 
-de la población $X_0>0$, se tiene la transición $X \rightarrow X+1$ con 
-propensidad $a=rX$ en este caso observamos un crecimiento exponencial de la 
-población.
+La función Malthus_Gillespie() implementa el algoritmo de Gillespie para el
+enfoque estocástico de este modelo, partiendo de un estado inicial de la
+población $X_0>0$ con $r<0$, se tiene la transición:
+    $$
+      X \rightarrow X-1, \quad a=|r|X.
+    $$
 
 ```{r}
 Malthus_Gillespie<-function(r,x0,t0,tf){
-  # Variable espacial que almacena el estado del sistema en tras cada reacción
+  # Variable espacial que almacena el estado del sistema tras cada reacción
   x <- x0
   # Variable espacial
   x_actual <- x0
@@ -94,14 +95,14 @@ Malthus_Gillespie<-function(r,x0,t0,tf){
 ```
 
 ```{r}
-# Definimos parámetros adecuados
-r <- 0.1
-x0 <- 1
+# Definimos unos parámetros adecuados
+r <- (-0.1)
+x0 <- 50
 t0 <- 0
-tf <- 30
+tf <- 60
 
-# Consideramos una realización
-n_realizaciones <- 1
+# Consideramos 5 realizaciones
+n_realizaciones <- 5
 
 # Inicializamos el gráfico en el que incluimos la realización
 grafico <- ggplot()
@@ -109,19 +110,38 @@ grafico <- ggplot()
 for (i in 1:n_realizaciones) {
   realizacion <- Malthus_Gillespie(r,x0,t0,tf)
   imprimir <- realizacion$datos
-  grafico <- grafico + geom_line(data = imprimir, aes(x = t_imprimir, y = x_imprimir, color="Realización"))
+  # Añadimos cada realización al gráfico 
+  grafico <- grafico + 
+    geom_line(data = imprimir, aes(x = t_imprimir, y = x_imprimir, color= "Realizaciones"))
 }
+
 ```
 
 ```{r}
+int <- 0.05
+parameter <- c(r)
+state <- c(X=x0)
+times <- seq(t0,tf,by=int)
 
-grafico <- grafico + labs(title = element_blank(), x = "Tiempo (s)", y = " Número de individuos") +
-  coord_cartesian(xlim = c(0, tf)) +
-  theme_minimal() + 
-  theme(legend.title=element_blank(),legend.position = "bottom",axis.title.x = element_text(size = 10), axis.title.y = element_text(size = 10)) + 
-  scale_color_manual(values = c("Realización"="grey" ), breaks = c("Realización"))
+# Resolvemos la EDO usando la función ode() de la librería "deSolve"
+out <- ode(y=state, times = times, func = Malthus_EDO, parms = parameter)
+# Convertimos el resultado de la función a una base de datos para poder representarlo gráficamente
+out <- data.frame(out)
+# Añadimos al gráfico la solución de la EDO del modelo
+grafico <- grafico + geom_line(lwd=0.5,data=out,aes(x = time, y = X, color= "Sol. mod. det."))
+
+```
+
+```{r}
+grafico <- grafico +
+   labs(x = "Tiempo (s)", y = " Número de partículas") + coord_cartesian(xlim = c(0, tf)) +
+   theme_minimal() +
+   theme(legend.title=element_blank(),legend.position = "bottom",
+        axis.title.x = element_text(size = 10),  
+        axis.title.y = element_text(size = 10)) +
+   scale_color_manual(values = c("Realizaciones"="gray","Sol. mod. det." = "red"),
+                      breaks = c("Realizaciones", "Sol. mod. det."))
+
 
 print(grafico)
 ```
-
-
