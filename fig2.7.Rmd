@@ -135,9 +135,8 @@ a la del modelo determinista que converge al equilibrio del sistema.
 ```{r}
 parametros <- c(k1=(4*10^(-5))*60,k2=10*60,k3=50*60,k4=25*60) 
 x0 <- c(10,10) 
-tf <- 2
 t0 <- 0
-
+tf <- 20
 
 imprimir <- Schnakenberg_Gillespie(parametros,x0,t0,tf)
 
@@ -150,6 +149,7 @@ parameter <- parametros
 state <- c(A=x0[1],B=x0[2])
 times <- seq(t0,tf,by=0.001)
 
+# Resolvemos la EDO usando la función ode del paquete "deSolve"
 out <- ode(y=state, times = times, func = Schnakenberg_EDO, parms = parametros)
 out <- data.frame(out)
 
