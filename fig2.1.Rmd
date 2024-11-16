@@ -22,8 +22,7 @@ tiempo_exponencial <- function(a0){
 }
 ```
 
-Definimos la EDO del modelo de Malthus que en dinámica logística
-determinista viene dado por: $$
+Definimos la EDO del modelo de Malthus: $$
   \frac{dX}{dt}=rX, \quad X(0)=X_{0}>0,
 $$ donde $X(t)$ es número de individuos de la población a tiempo $t$ y $r$
 es la tasa de proliferación neta.
