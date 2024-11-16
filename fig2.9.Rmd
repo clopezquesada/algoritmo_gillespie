@@ -1,0 +1,193 @@
+---
+title: "Brusselator"
+output: html_notebook
+---
+```{r}
+library("ggplot2")
+library("deSolve")
+library("ggpubr")
+```
+
+Añadimos la función que calcula el siguiente tiempo de reacción de
+acuerdo a la fórmula $$
+  \tau=\frac{1}{a_0}\log\left(\frac{1}{r_1}\right)
+$$ donde $r1$ es un número aleatorio de la distribución uniforme en el
+intervalo unidad.
+
+```{r}
+tiempo_exponencial <- function(a0){
+  r1 <- runif(n=1,min=0,max=1)
+  return((1/a0)*log(1/r1))
+}
+```
+
+Las ecuaciones diferenciales del modelo determinista del Brusselator
+son las siguientes:
+\[
+  \frac{dX}{dt}=k_1A+k_3X^2Y-k_2BX-k_4X
+\]
+\[
+  \frac{dY}{dt}=k_2BX-k_3X^2Y
+\] 
+con $k_1,k_2,k_3,k_4,A,B>0$.
+
+```{r}
+brusselator_edo <- function(t,state,parameters){
+  with(as.list(c(state, parameters)), {
+    dX <- k1*A-k2*B*X+k3*(X^2)*Y-k4*X
+    dY <- B*k2*X-k3*(X^2)*Y
+    res<-c(dX,dY)
+    list(res)
+  })
+}
+```
+
+La función Brusselator_Gillespie() implementa el algoritmo de Gillespie para 
+el conjunto de reacciones siguiente (junto con las propensidades 
+correspondientes):
+\[
+  A \xrightarrow{k_1} X, \quad a_1=k_1A
+\]
+\[
+  X+B \xrightarrow_{k_2} Y, \quad a_2=k_2BX
+\]
+\[
+  2X+Y\xrightarrow{k_3} 3X, \quad a_2=k_3X(X-1)Y
+\]
+\[
+  X \xrightarrow{k_4} \emptyset, \quad a_4=k_4X
+\]
+
+imprime para cada tiempo de reacción el estado del sistema hasta un tiempo final.
+
+```{r}
+
+Brusselator_Gillespie <- function(parametros,x0,t0,tf){
+  k1 <- parametros[1]
+  k2 <- parametros[2]
+  k3 <- parametros[3]
+  k4 <- parametros[4]
+  A <- parametros[5]
+  B <- parametros[6]
+  
+  
+  # Matriz que almacena en cada tiempo de reacción el estado del sistema
+  x <- x0
+  # Variable espacial
+  x_actual <- x0
+  
+  # Variable temporal que ira avanzando conforme ocurran las reacciones
+  t <- t0
+  # Variable temporal que almacena los tiempos de reacción
+  t_imprimir <- t0
+  
+  # Definimos el vector de propensidades y la propensidad total
+  a <- numeric()
+  a0 <- numeric()
+  
+  # Calculamos las propensidades individuales y la propensidad total
+  a[1] <- A*k1
+  a[2] <- B*k2*x_actual[1] 
+  a[3] <- k3*x_actual[1]*(x_actual[1]-1)*x_actual[2]
+  a[4] <- k4*x_actual[1]
+  a0 <- sum(a)
+  
+  while(t<tf){
+    
+      # Calculamos el siguiente tiempo de reacción y lo almacenamos
+      t<-t+tiempo_exponencial(a0)
+      t_imprimir <- c(t_imprimir,t)
+      
+      # Calculamos la siguiente reacción que ocurre
+      r2<-runif(n=1, min=0, max=1)
+      
+      # Modificamos únicamente las propensidades que se ven modificadas
+      if(a[1]>=r2*a0){
+        x_actual[1] <- x_actual[1] + 1
+        a[2] <- B*k2*x_actual[1] 
+        a[3] <- k3*x_actual[1]*(x_actual[1]-1)*x_actual[2]
+        a[4] <- k4*x_actual[1]
+      }else if(a[1]+a[2]>=r2*a0){
+        x_actual[1] <- x_actual[1] - 1
+        x_actual[2] <- x_actual[2] + 1 
+        a[2] <- k2*B*x_actual[1] 
+        a[3] <- k3*x_actual[1]*(x_actual[1]-1)*x_actual[2]
+        a[4] <- k4*x_actual[1]
+      }else if(a[1]+a[2]+a[3]>=r2*a0){
+        x_actual[1] <- x_actual[1] + 1
+        x_actual[2] <- x_actual[2] - 1
+        a[2] <- k2*B*x_actual[1] 
+        a[3] <- k3*x_actual[1]*(x_actual[1]-1)*x_actual[2]
+        a[4] <- k4*x_actual[1]
+      }else{
+        x_actual[1] <- x_actual[1] - 1
+        a[2] <- k2*B*x_actual[1] 
+        a[3] <- k3*x_actual[1]*(x_actual[1]-1)*x_actual[2]
+        a[4] <- k4*x_actual[1]
+      }
+    
+      
+      # Recalculamos la propensidad total
+      a0 <- sum(a)
+    
+      # Almacenamos el estado del sistema
+      x <- rbind(x,x_actual)
+  }
+   
+  # Almacenamos el tiempo de muestreo y la matriz de estados en una base de datos para poder mostrarla gráficamente
+  datos <- data.frame(t_imprimir=t_imprimir,x_imprimir=x,row.names = NULL)
+  return(datos)
+}
+```
+
+```{r}
+k1 <- 5000
+k2 <- 10
+k3 <- 0.000005
+k4 <- 5
+A <- 1
+B <- 1
+parametros <- c(k1=k1,k2=k2,k3=k3,k4=k4,A=A,B=B) 
+t0 <- 0
+x0 <- c(2000,3000) 
+#x0 <- c((k1*A)/k4,(k4*k2*B)/(k1*k3*A))
+# Para observar el comportamiento que muestra la gráfica 2.9a tomamos la condición 
+# inicial (X_0,Y_0)=(2000,3000), para el de la gráfica 2.9b tomamos (X_0,Y_0)=((k1*A)/k4,(k4*k2*B)/(k1*k3*A))
+tf <- 7
+
+# Definimos los gráficos y añadimos la realización calculada anteriormente
+imprimir <- Brusselator_Gillespie(parametros,x0,t0,tf)
+
+graficoA <- ggplot(imprimir) + geom_line(data = imprimir, aes(x=t_imprimir, y=x_imprimir.1, color="Realización"))
+graficoB <- ggplot(imprimir) + geom_line(data = imprimir, aes(x=t_imprimir, y=x_imprimir.2, color="Realización"))
+  
+# Definimos los parámetros necesarios y resolvemos la EDO usando la función ode() del paquete "deSolve"
+int <- 0.01
+parameter <- parametros
+state <- c(X=x0[1],Y=x0[2])
+times <- seq(0,tf,by=int)
+
+out <- ode(y=state, times = times, func = brusselator_edo, parms = parametros)
+out <- data.frame(out)
+
+# Añadimos la solución de la EDO a los gráficos
+graficoA <- graficoA + geom_line(data=out, aes(x=time,y=X,color="Sol. mod. det."))
+graficoB <- graficoB + geom_line(data=out, aes(x=time,y=Y,color="Sol. mod. det."))
+
+graficoA <- graficoA + labs(title = element_blank(), x = "Tiempo (s)", y = " Número de moléculas de la especie X")+    theme_minimal() +
+ theme(legend.title=element_blank(),legend.position = "bottom",
+      axis.title.x = element_text(size = 10),  
+      axis.title.y = element_text(size = 10)) +
+ scale_color_manual(values = c("Realización"="gray", "Sol. mod. det." = "red"),
+                    breaks = c("Realización", "Sol. mod. det."))
+
+graficoB <- graficoB + labs(title = element_blank(), x = "Tiempo (s)", y = " Número de moléculas de la especie Y")+ theme_minimal() +
+ theme(legend.title=element_blank(),legend.position = "bottom",
+      axis.title.x = element_text(size = 10),  
+      axis.title.y = element_text(size = 10)) +
+ scale_color_manual(values = c("Realización"="gray", "Sol. mod. det." = "red"),
+                    breaks = c("Realización", "Sol. mod. det."))
+
+grafico <- ggarrange(graficoA,graficoB,ncol=2,common.legend=TRUE, legend="bottom")
+print(grafico)
+```
