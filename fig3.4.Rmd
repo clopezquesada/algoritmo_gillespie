@@ -26,28 +26,25 @@ tiempo_exponencial <- function(a0){
 }
 ```
 
-Resolvemos la ecuación en derivadas parciales asociada al modelo para más tarde poder representarla gráficamente y compararla con las realizaciones:
+Resolvemos la ecuación en derivadas parciales asociada al modelo para más tarde poder representarla gráficamente y compararla con las realizaciones del algoritmo de Gillespie:
 \[
 u_t=Du_{xx}+u\left(1-\frac{u}{K}\right)
 \]
 donde la primera parte corresponde a un proceso de difusión y la segunda al modelo logístico. Consideramos condiciones de contorno Neumann-0 en el dominio $[0,L]$.
 \[
-  u(0,x)=e^{-\frac{x^2}{2\sigma^2}}
+  u_x(t,0)=0,
 \]
 \[
-  u_x(t,0)=0
+  u_x(t,L)=0.
 \]
-\[
-  u_x(t,L)=0
-\]
+Consideramos como condición inicial 30 partículas en el primer compartimento del dominio.
 
 ```{r}
 # Condición inicial con sigma=0.1
 u0 <- function(x){
   x0 <- rep(0, length(x))
   x0[1] <- 30
-  #x0 <- (1/(sqrt(2*pi*0.2^2)))*exp(-(x^2)/(2*0.2^2))
-  return(as.integer(x0))
+  return(x0)
 }
 
 # Función que resuelve la EDO numéricamente
@@ -55,7 +52,7 @@ uFKPP <- function(L,D,K,N,M,T){
   k <- T/M
   h <- L/N
   x <- seq(0,L,length.out=N+1)
-  t <- seq(0,T, by=k)
+  t <- seq(0,T,by=k)
   I <- diag(1,N-1,N-1)
   A <- matrix(0,nrow = N-1, ncol = N-1)
   
@@ -89,7 +86,7 @@ uFKPP <- function(L,D,K,N,M,T){
 
 Resolvemos ahora la ecuación estocásticamente, consideramos una partícula inicialmente a la izquierda del dominio y consideramos que no hay flujo a través de los bordes de éste:
 ```{r}
-FKPP <- function(L,D,K,r,t0,tf,N,t_muestreo){
+FKPP_Gillespie <- function(L,D,K,r,t0,tf,N,t_muestreo){
   t <- t0
   
   h <- L/N  # Longitud de cada uno de los subintervalos
@@ -187,7 +184,7 @@ tf <- 30
 M <- 1000
 t_muestreo <- c(10,30)
 
-df <- FKPP(L=L,D=D,K=K,r=r,t0=t0,tf=tf,N=N,t_muestreo=t_muestreo)
+df <- FKPP_Gillespie(L=L,D=D,K=K,r=r,t0=t0,tf=tf,N=N,t_muestreo=t_muestreo)
 df_t1 <- data.frame(x=df$x,freq=df$X1)
 df_t2 <- data.frame(x=df$x,freq=df$X2)
 
@@ -197,7 +194,7 @@ grafico2 <- ggplot(data=df_t2,aes(x=x,y=freq))+geom_line(data=df_t2,aes(x=x,y=fr
 n_realizaciones <- 49
 
 for (i in 1:n_realizaciones) {
-  df_aux <- FKPP(L=L,D=D,K=K,t0=t0,tf=tf,N=N,t_muestreo=t_muestreo)
+  df_aux <- FKPP_Gillespie(L=L,D=D,K=K,t0=t0,tf=tf,N=N,t_muestreo=t_muestreo)
   df_t1 <- cbind(df_t1, freq = df_aux$X1)
   df_t2 <- cbind(df_t2, freq = df_aux$X2)
 }
