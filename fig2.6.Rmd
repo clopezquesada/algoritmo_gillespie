@@ -1,0 +1,200 @@
+---
+title: "Lotka-Volterra, Presa-Depredador"
+output: html_notebook
+---
+
+
+```{r}
+library("ggplot2")
+library("deSolve")
+library("ggpubr")
+```
+
+Añadimos la función que calcula el siguiente tiempo de reacción de
+acuerdo a la fórmula $$
+  \tau=\frac{1}{a_0}\log\left(\frac{1}{r_1}\right)
+$$ donde $r1$ es un número aleatorio de la distribución uniforme en el
+intervalo unidad.
+
+```{r}
+tiempo_exponencial <- function(a0){
+  r1 <- runif(n=1,min=0,max=1)
+  return((1/a0)*log(1/r1))
+}
+```
+
+La ecuación diferencial que define el modelo de Lotka-Volterra determinista es:
+\[
+  \frac{dA}{dt}=k_1A-k_2AB
+\]
+\[
+  \frac{dB}{dt}=k_2AB-k_3B
+\] 
+se trata de un caso de antagonismo (presa-depredador) puesto que los valores de 
+los coeficientes de influencia cruzada tienen distinto signo, la presencia de B 
+favorece al desarrollo de A mientras que la presencia de A perjudica a la especie 
+B. Donde $X$ e $Y$ son el número de individuos de dos especies respectivamente, 
+en función del tiempo y $k_1$, $k_2$, $k_3$, $k_4>0$ son los 
+parámetros de nacimiento y muerte de las especies del sistema.
+```{r}
+presa_depredador_EDO <- function(t,state,parameters){
+  with(as.list(c(state, parameters)), {
+    dA <- A*(k1-k2*B)
+    dB <- (-B)*(k3-k2*A)
+    res<-c(dA,dB)
+    list(res)
+  })
+}
+```
+
+La función PresaDepredador_Gillespie implementa el siguiente proceso 
+(junto con las propensidades correspondientes):
+\[
+  A\rightarrow 2A, \quad a_1=k_1A
+\]
+\[
+  A+B\rightarrow 2B, \quad a_3=k_2AB
+\]
+\[
+  B\rightarrow \emptyset, \quad a_4=k_3B
+\]
+imprime, para cada tiempo de reacción, el estado del sistema hasta un tiempo 
+final.
+
+```{r}
+
+PresaDepredador_Gillespie <- function(parametros,x0,t0,tf){
+  k1 <- parametros[1]
+  k2 <- parametros[2]
+  k3 <- parametros[3]
+  
+  # Variable espacial que almacena todos los estados del sistema para todos los tiempos de reacción
+  x <- x0
+  # Variable espacial que almacena el estado del sistema y que se modificará cada vez que ocurra una reacción
+  x_actual <- x0
+  
+  # Variable temporal que almacena los tiempos de reación
+  t_imprimir <- t0
+  # Variable temporal que ira avanzando conforme ocurran las reacciones
+  t <- t0
+  
+  # Declaramos el vector propensidad y la propensidad total
+  a <- numeric()
+  a0 <- numeric()
+  
+  # Calculamos las propensidades individuales y la propensidad total
+  a[1] <- k1*x_actual[1]
+  a[2] <- k2*x_actual[1]*x_actual[2]
+  a[3] <- k3*x_actual[2] 
+  a0<-sum(a)
+  
+  while(t<tf){
+      
+    # Calculamos y almacenamos el siguiente tiempo de reacción
+    t<-t+tiempo_exponencial(a0)
+    t_imprimir <- c(t_imprimir,t)
+    
+    if(t == Inf){
+      x_actual <- c(0,0)
+    }else{
+    
+    # Calculamos la siguiente reacción que ocurre
+    r2<-runif(n=1, min=0, max=1)
+    
+    if(a[1]>=r2*a0){
+        x_actual[1] <- x_actual[1] + 1 
+        a[1] <- k1*x_actual[1]
+        a[2] <- k2*x_actual[1]*x_actual[2]
+    }else if(a[1]+a[2]>=r2*a0 & x_actual[1]>0){
+        x_actual[1] <- x_actual[1] - 1
+        x_actual[2] <- x_actual[2] + 1
+        a[1] <- k1*x_actual[1]
+        a[2] <- k2*x_actual[1]*x_actual[2]
+        a[3] <- k3*x_actual[2] 
+    }else if(x_actual[2]>0){
+        x_actual[2] <- x_actual[2] - 1
+        a[2] <- k2*x_actual[1]*x_actual[2]
+        a[3] <- k3*x_actual[2] 
+    }
+    
+    # Recalculamos la propensidad total
+    a0<-sum(a)
+    
+    }
+    
+    # Almacenamos para cada tiempo de reacción el estado del sistema
+    x<-rbind(x,x_actual)
+    
+  }
+  
+  # Mostramos un mensaje en el caso de que se extinga alguna de las especies
+  # if(x_actual[1]==0)
+  #   warning("Extinción de la especie A.")
+  # else if(x_actual[2]==0)
+  #   warning("Extinción de la especie B.")
+  
+  # Almacenamos el tiempo de muestreo y la matriz de estados en una base de datos para poder mostrarla gráficamente
+  datos <- data.frame(t_imprimir=t_imprimir,x_imprimir=x,row.names = NULL)
+  return(datos)
+}
+```
+
+```{r}
+k1 <- 2
+k2 <- 0.1
+k3 <- 3
+parametros <- c(k1=k1,k2=k2,k3=k3) 
+# x0 <- c(k1/k2,k4/k3) # para tomar el valor inicial de la población en el equilibrio
+x0 <- c(50,5)
+tf <- 5
+t0 <- 0
+
+graficoA <- ggplot()
+graficoB <- ggplot()
+
+n_realizaciones <- 1
+
+for(i in 1:n_realizaciones){
+  realizacion <- PresaDepredador_Gillespie(parametros,x0,t0,tf)
+  
+  imprimir <- data.frame(t=realizacion$t_imprimir,A=realizacion$x_imprimir.1,B=realizacion$x_imprimir.2)
+  
+  graficoA <- graficoA + geom_line(data = imprimir, aes(x=t, y=A, color="Realización"))
+                                
+  graficoB <- graficoB + geom_line(data = imprimir, aes(x=t, y=B, color="Realización"))
+}
+
+# Definimos los parámetros necesarios y resolvemos la EDO usando la función ode() del paquete "deSolve"
+parameter <- parametros
+state <- c(A=x0[1],B=x0[2])
+times <- seq(0,tf,by=0.01)
+
+out <- ode(y=state, times = times, func = presa_depredador_EDO, parms = parametros)
+out <- data.frame(out)
+
+# Añadimos la solución de la EDO a los gráficos
+graficoA <- graficoA + geom_line(data=out, aes(x=time,y=A,color="Sol. mod. det."))
+graficoB <- graficoB + geom_line(data=out, aes(x=time,y=B,color="Sol. mod. det."))
+
+graficoA <- graficoA +
+ labs(x = "Tiempo (s)", y = " Número de individuos de la especie X") +
+ theme_minimal() +
+ theme(legend.title=element_blank(),legend.position = "bottom",
+      axis.title.x = element_text(size = 10),  
+      axis.title.y = element_text(size = 10)) +
+ scale_color_manual(values = c("Realización"="gray", "Sol. mod. det." = "red"),
+                    breaks = c("Realización", "Sol. mod. det."))
+
+  graficoB <- graficoB +
+ labs(x = "Tiempo (s)", y = " Número de individuos de la especie Y") +
+ theme_minimal() +
+ theme(legend.title=element_blank(),legend.position = "bottom",
+      axis.title.x = element_text(size = 10),  
+      axis.title.y = element_text(size = 10)) +
+ scale_color_manual(values = c("Realización"="gray", "Sol. mod. det." = "red"),
+                    breaks = c("Realización", "Sol. mod. det."))
+
+
+grafico <- ggarrange(graficoA,graficoB,ncol=2,common.legend=TRUE, legend="bottom")
+print(grafico)
+```
