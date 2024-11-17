@@ -1,0 +1,269 @@
+---
+title: "Difusion - Dirichlet homogéneas"
+output: html_notebook
+---
+
+Sea un dominio $[0,L]$ que dividimos en $K$ cajas iguales, consideramos únicamente la interacción entre cajas.
+
+```{r}
+library("ggplot2")
+library("deSolve")
+library("ggpubr")
+```
+
+Añadimos la función que calcula el siguiente tiempo de reacción de
+acuerdo a la fórmula $$
+  \tau=\frac{1}{a_0}\log\left(\frac{1}{r_1}\right)
+$$ donde $r1$ es un número aleatorio de la distribución uniforme en el
+intervalo unidad.
+
+```{r}
+tiempo_exponencial <- function(a0){
+  r1 <- runif(n=1,min=0,max=1)
+  return((1/a0)*log(1/r1))
+}
+```
+
+Función en la que definimos la ecuación en derivadas parciales que modela el 
+proceso de difusión:
+\[
+  \frac{\partial U}{\partial t}=D\frac{\partial^2U}{\partial x^2}
+\]
+donde $D$ es el coeficiente de difusión. 
+Lo resolvemos mediante el método de diferencias finitas en el que dividimos 
+el espacio en N subintervalos iguales donde la longitud de cada uno de ellos 
+será h=L/N y el tiempo en M subintervalos de longitud k=T/M, 
+donde T es el tiempo final de simulación. 
+Tomamos como condición inicial 500 partículas en el departamento central. 
+consideramos condiciones de contorno Dirichlet homogéneas.
+
+```{r}
+u0 <- function(x) {
+  x0 <- rep(0, length=length(x))
+  x0[length(x)/2+1] <- 500
+  return(x0)
+}
+
+
+uDifusion <- function(L,D,N,M,T){
+  k <- T/M
+  h <- L/N
+  x <- seq(0,L,length.out=N+1)
+  t <- seq(0,M, by=k)
+  I <- diag(1,N-1,N-1)
+  A <- matrix(0,nrow = N-1, ncol = N-1)
+  
+  for (i in 1:N-1) {
+    A[i,i] = -2
+    if (i>1)
+      A[i,i-1] = 1
+    
+    if (i<N-1)
+      A[i,i+1] = 1
+    
+  }
+  
+  u <- u0(x[1:(N-1)])
+  H = I-(k/(h^2))*D*A
+  t_actual <- 0
+  
+  while (t_actual<T){
+    u <- solve(H,u)
+    t_actual <- t_actual+k
+  }
+  u <- c(0, u, 0)
+  df <- data.frame(x,u)
+  return(df)
+}
+```
+
+Función Difusion_Gillespie() que devuelve una realización del proceso de 
+difusión entre las distintas cajas en las que dividimos el dominio, 
+pudiendo haber flujo de moléculas a través de los bordes del dominio. 
+Es decir, modela la siguiente cadena de reacciones en un determinado intervalo 
+de tiempo donde $X_i(t)$ es el número de moléculas en la caja $i$ a tiempo $t$:
+\[
+  X_1 \rightleftarrows X_2 \rightleftarrows \dots \rightleftarrows X_K, \quad a_i=X_i(t)\frac{D}{h^2}=X_i(t)d, \quad i=1,\dots, K
+\]
+Reacciones que simulan las condiciones de contorno cuando hay flujo de 
+partículas a través de los borde del dominio. Cuando consideramos condiciones
+de contorno Dirichlet homogéneas las propensidades $a_{K+1}=a_{K+3}=0$.
+\[
+  \emptyset \rightarrow X_1, \quad a_{K+1}=du_0
+\]
+\[
+  X_1 \rightarrow \emptyset, \quad a_{K+2}=dX_1
+\]
+\[
+  \emptyset \rightarrow X_K, \quad a_{K+3}=du_N
+\]
+\[
+  X_K \rightarrow \emptyset, \quad a_{K+4}=dX_K
+\]
+```{r}
+Difusion_Gillespie <- function(D,t0,tend,N,L,c1,c2,c3,c4,t_muestreo){
+  h <- L/N # Longitud de cada uno de los subintervalos
+  x <- seq(0,L,length=N)
+  x0 <- u0(x)
+  x_actual <- matrix(x0,nrow = length(x0),ncol = 1)
+  # Variable espacial que almacena el estado del sistema en cada tiempo de 
+  # muestreo
+  X <- numeric()
+  
+  t <- t0
+  
+  a <- numeric()
+  a0 <- numeric()
+  
+  d <- D/(h^2) # Ratio de transición d
+  
+  # Cálculo de las propensidades
+  for(i in 1:N)
+      a[i] <- x_actual[i]*d
+
+  a[N+1] <- c1
+  a[N+2] <- c2*x_actual[1]
+  a[N+3] <- c3
+  a[N+4] <- c4*x_actual[N]
+  a0 <- sum(a[1:(N-1)])+sum(a[2:N])+a[N+1]+a[N+2]+a[N+3]+a[N+4]
+  
+  # Variables auxiliares que utilizamos al final de la función y que controlan 
+  # cuando se imprime el estado del sistema en función de los tiempos en los 
+  # que se quiere mostrar
+  t_aux <- t0
+  z <- 1 
+  
+  while(t<tf){
+    
+    # Calculamos el tiempo de siguiente reacción
+    t <- t+tiempo_exponencial(a0)
+    
+    # Selección de siguiente reacción
+    r2 <- runif(n=1, min=0, max=1)
+    
+    if(r2<sum(a[1:(N-1)])/a0){ # Ocurre un salto hacia la derecha
+      j <- 1
+      while ( (j<=N-1) & !(r2<sum(a[1:j])/a0)) 
+        j <- j+1 
+      x_actual[j] <- x_actual[j]-1
+      x_actual[j+1] <- x_actual[j+1]+1
+      a[j] <- x_actual[j]*d
+      a[j+1] <- x_actual[j+1]*d
+    }else if(r2<(sum(a[1:(N-1)])+sum(a[2:N]))/a0){ # Ocurre un salto hacia la izquierda
+      j <- 2
+      while((j<=N) & !(r2<(sum(a[1:(N-1)])+sum(a[2:j]))/a0))
+        j <- j+1
+      x_actual[j] <- x_actual[j]-1
+      x_actual[j-1] <- x_actual[j-1]+1
+      a[j] <- x_actual[j]*d
+      a[j-1] <- x_actual[j-1]*d
+    }else if(r2<(sum(a[1:(N-1)])+sum(a[2:N])+a[N+1])/a0){
+      x_actual[1] <- x_actual[1]+1
+      a[1] <- x_actual[1]*d
+    }else if(r2<(sum(a[1:(N-1)])+sum(a[2:N])+a[N+1]+a[N+2])/a0){
+      x_actual[1] <- x_actual[1]-1
+      a[1] <- x_actual[1]*d
+    }else if(r2<(sum(a[1:(N-1)])+sum(a[2:N])+a[N+1]+a[N+2]+a[N+3])/a0){
+      x_actual[N] <- x_actual[N]+1
+      a[N] <- x_actual[N]*d
+    }else{
+      x_actual[N] <- x_actual[N]-1
+      a[N] <- x_actual[N]*d
+    }
+    
+    a[N+2] <- c2*x_actual[1]
+    a[N+4] <- c4*x_actual[N]
+    
+    # Calculamos la suma de las propensidades
+    a0 <- sum(a[1:(N-1)])+sum(a[2:N])+a[N+1]+a[N+2]+a[N+3]+a[N+4]
+    
+    # Condicional auxiliar en el que almacenamos el estado del sistema 
+    # para los tiempos en los que se desea mostrar
+    if(t>t_muestreo[z] & t_aux<t_muestreo[z] & z<=length(t_muestreo)){
+        X <- cbind(X,x_actual)
+        t_aux <- t_muestreo[z]
+        z <- z+1
+      }
+  }
+  
+  df <- data.frame(x,X)
+  
+  return(df)
+}
+```
+
+```{r}
+L <- 1
+D <- 0.001
+N <- 50
+tf <- 90
+M <- 1000
+t0 <- 0
+t_muestreo <- c(5,15,30,90)
+
+h <- L/N
+d <- D/(h^2)
+
+c1 <- d*0 # Es d*u_0, valor del contorno x=0
+c2 <- d
+c3 <- d*0 # Es d*u_{N+1} valor del contorno x=L
+c4 <- d
+
+df <- Difusion_Gillespie(D,t0,tf,N,L,c1,c2,c3,c4,t_muestreo)
+df_t1 <- data.frame(x=df$x,freq=df$X1)
+df_t2 <- data.frame(x=df$x,freq=df$X2)
+df_t3 <- data.frame(x=df$x,freq=df$X3)
+df_t4 <- data.frame(x=df$x,freq=df$X4)
+
+n_realizaciones <- 10
+
+grafico1 <- ggplot(data=df_t1,aes(x=x,y=freq))+geom_line(data=df_t1,aes(x=x,y=freq, color="Realizaciones"))
+grafico2 <- ggplot(data=df_t2,aes(x=x,y=freq))+geom_line(data=df_t2,aes(x=x,y=freq, color="Realizaciones"))
+grafico3 <- ggplot(data=df_t3,aes(x=x,y=freq))+geom_line(data=df_t3,aes(x=x,y=freq, color="Realizaciones"))
+grafico4 <- ggplot(data=df_t4,aes(x=x,y=freq))+geom_line(data=df_t4,aes(x=x,y=freq, color="Realizaciones"))
+
+for (i in 2:n_realizaciones) {
+  
+  df_aux <- Difusion_Gillespie(D,t0,tf,N,L,c1,c2,c3,c4,t_muestreo)
+  
+  grafico1 <- grafico1 + geom_line(data=df_aux,aes(x=x,y=X1, color="Realizaciones"))
+  grafico2 <- grafico2 + geom_line(data=df_aux,aes(x=x,y=X2, color="Realizaciones"))
+  grafico3 <- grafico3 + geom_line(data=df_aux,aes(x=x,y=X3, color="Realizaciones"))
+  grafico4 <- grafico4 + geom_line(data=df_aux,aes(x=x,y=X4, color="Realizaciones"))
+}
+
+df2_t1 <- uDifusion(L,D,N=N,M=1000,T=t_muestreo[1])
+df2_t2 <- uDifusion(L,D,N=N,M=1000,T=t_muestreo[2])
+df2_t3 <- uDifusion(L,D,N=N,M=1000,T=t_muestreo[3])
+df2_t4 <- uDifusion(L,D,N=N,M=1000,T=t_muestreo[4])
+
+# Añadimos la solución de la EDO a la gráfica
+grafico1 <- grafico1 + geom_line(data=df2_t1,aes(x=x,y=u,color="Sol. mod. det."))
+grafico2 <- grafico2 + geom_line(data=df2_t2,aes(x=x,y=u,color="Sol. mod. det."))
+grafico3 <- grafico3 + geom_line(data=df2_t3,aes(x=x,y=u,color="Sol. mod. det."))
+grafico4 <- grafico4 + geom_line(data=df2_t4,aes(x=x,y=u,color="Sol. mod. det."))
+
+grafico1 <- grafico1 + ylim(0,50) + labs(title = element_blank(), x = "x[mm]", y = "Concentración",subtitle = paste("T. f.=",t_muestreo[1],"s",sep=""))+ theme_minimal() +
+   theme(legend.title=element_blank(),legend.position = "bottom",axis.title.x = element_text(size = 9),  
+        axis.title.y = element_text(size = 9)) +
+   scale_color_manual(values = c("Sol. mod. det." = "red", "Realizaciones"="grey", "Media"="blue", "Intervalo de confianza"="green" ), breaks = c("Realizaciones", "Media", "Intervalo de confianza", "Sol. mod. det."))
+
+grafico2 <- grafico2 + ylim(0,50) + labs(title = element_blank(), x = "x[mm]", y = "Concentración",subtitle = paste("T. f.=",t_muestreo[2],"s",sep=""))+ theme_minimal() +
+   theme(legend.title=element_blank(),legend.position = "bottom",axis.title.x = element_text(size = 9),  
+        axis.title.y = element_text(size = 9)) +
+   scale_color_manual(values = c("Sol. mod. det." = "red", "Realizaciones"="grey", "Media"="blue", "Intervalo de confianza"="green" ), breaks = c("Realizaciones", "Media", "Intervalo de confianza", "Sol. mod. det."))
+
+grafico3 <- grafico3 + ylim(0,50) + labs(title = element_blank(), x = "x[mm]", y = "Concentración",subtitle = paste("T. f.=",t_muestreo[3],"s",sep=""))+ theme_minimal() +
+   theme(legend.title=element_blank(),legend.position = "bottom",axis.title.x = element_text(size = 9),  
+        axis.title.y = element_text(size = 9)) +
+   scale_color_manual(values = c("Sol. mod. det." = "red", "Realizaciones"="grey", "Media"="blue", "Intervalo de confianza"="green" ), breaks = c("Realizaciones", "Media", "Intervalo de confianza", "Sol. mod. det."))
+
+grafico4 <- grafico4 + ylim(0,50) + labs(title = element_blank(), x = "x[mm]", y = "Concentración",subtitle = paste("T. f.=",t_muestreo[4],"s",sep=""))+ theme_minimal() +
+   theme(legend.title=element_blank(),legend.position = "bottom",axis.title.x = element_text(size = 9),  
+        axis.title.y = element_text(size = 9)) +
+   scale_color_manual(values = c("Sol. mod. det." = "red", "Realizaciones"="grey", "Media"="blue", "Intervalo de confianza"="green" ), breaks = c("Realizaciones", "Media", "Intervalo de confianza", "Sol. mod. det."))
+
+grafico <- ggarrange(grafico1,grafico2,grafico3,grafico4,nrow=2,ncol=2,common.legend=TRUE, legend="bottom")
+print(grafico)
+```
+

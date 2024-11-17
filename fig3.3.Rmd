@@ -1,0 +1,127 @@
+---
+title: "Caminante aleatorio"
+output: html_notebook
+---
+
+```{r}
+library("ggplot2")
+library("deSolve")
+```
+
+Añadimos la función que calcula el siguiente tiempo de reacción de
+acuerdo a la fórmula $$
+  \tau=\frac{1}{a_0}\log\left(\frac{1}{r_1}\right)
+$$ donde $r1$ es un número aleatorio de la distribución uniforme en el
+intervalo unidad.
+
+```{r}
+tiempo_exponencial <- function(a0){
+  r1 <- runif(n=1,min=0,max=1)
+  return((1/a0)*log(1/r1))
+}
+```
+
+Definimos una nueva función que estudia el movimiento de una partícula en el 
+dominio $[0,L]$ en función del tiempo que transcurre, se trata del mismo 
+proceso estocástico implementado para el proceso de difusión pero considerando 
+únicamente una molécula en el dominio, con condiciones de contorno Neumann 
+homogéneas.
+
+```{r}
+
+Difusion_1particula <- function(D,x0,t0,tf,N,L,int=0.01){
+  n_particulas <- 1
+  x <- seq(0,L,length.out=N) # Dominio [0,L] dividido en N subintervalos
+  x_actual <- matrix(x0,nrow = length(x0),ncol = 1)
+  # Vector en el almacenaremos la posición de la partícula en cada tiempo
+  x_imprimir <- numeric()
+  
+  for(i in 1:N)
+      if(x_actual[i]==1)
+        x_imprimir <- c(x_imprimir,x[i])
+  
+  t <- t0 # Variable temporal avanza según vayan ocurriendo reacciones
+  t_imprimir <- t0
+  
+  a <- numeric()
+  a0 <- numeric()
+  
+  h <- L/N # Longitud de cada uno de los subintervalos
+  d <- D/(h^2) # Ratio de transición
+  
+  # Calculamos las propensidades
+  for(i in 1:N)
+      a[i]=x_actual[i]*d
+  
+  # Calculamos la propensidad total
+  a0 <- 2*d*n_particulas-x_actual[1]*d-x_actual[N]*d 
+  
+  while(t < tf){
+    # Calculamos y almacenamos el siguiente tiempo de reacción
+    t <- t+tiempo_exponencial(a0)
+    t_imprimir <- c(t_imprimir,t)
+    
+    # Calculamos y almacenamos la siguiente reacción
+    r2 <- runif(n=1, min=0, max=1)
+    
+    if(r2<sum(a[1:(N-1)])/a0){ 
+      j <- 1
+      while (!(r2<sum(a[1:j])/a0) & j<N-1) 
+        j <- j+1
+      x_actual[j]=x_actual[j]-1
+      x_actual[j+1]=x_actual[j+1]+1
+      a[j] <- x_actual[j]*d
+      a[j+1] <- x_actual[j+1]*d
+    }else{
+      j<-2
+      while(!(r2<(sum(a[1:(N-1)])+sum(a[2:j]))/a0) & j<N)
+        j <- j+1
+      x_actual[j]=x_actual[j]-1
+      x_actual[j-1]=x_actual[j-1]+1
+      a[j] <- x_actual[j]*d
+      a[j-1] <- x_actual[j-1]*d
+    }
+    
+    # Calculamos la propensidad total
+    a0 <- 2*d*n_particulas-x_actual[1]*d-x_actual[N]*d #N es el número total de moléculas en la simulación
+    
+    # Tras haber ocurrido la reacción, vemos en que posición se encuentra la partícula y la almacenamos
+    for(i in 1:N)
+      if(x_actual[i]==1)
+        x_imprimir <- c(x_imprimir,x[i])
+    
+  }
+  
+  #La función devuelve una base de datos que indica la posición de la partícula en el dominio tras cada reacción
+  return(data.frame(t_imprimir,x_imprimir))  
+}
+```
+
+
+```{r}
+L <- 1 
+N <- 40
+D <- 0.0001*60 
+x0 <- rep(0,length=N)
+x0[16] <- 1 # La partícula se encuentra inicialmente entre 0.3846154mm y 0.41025641mm
+t0 <- 0
+tf <- 10 # Tiempo final de simulación en minutos
+
+n_realizaciones <- 8
+realizacion <- Difusion_1particula(D,x0,t0,tf,N,L)
+grafico <- ggplot(data = realizacion,aes(x=t_imprimir,y=x_imprimir)) + 
+  geom_line(data = realizacion,aes(x=t_imprimir,y=x_imprimir)) + 
+  geom_point(data = realizacion,aes(x=t_imprimir,y=x_imprimir),size=0.2)
+
+for(s in 2:n_realizaciones){
+  realizacion <- Difusion_1particula(D,x0,t0,tf,N,L)
+  grafico <- grafico + 
+    geom_line(data = realizacion, aes(x=t_imprimir,y=x_imprimir), color=s) + 
+    geom_point(data = realizacion, aes(x=t_imprimir,y=x_imprimir), color=s, size=0.1)
+}
+
+grafico <- grafico + labs(title = element_blank(), x = "Tiempo (min)", y = "x [mm]") +
+   theme_minimal() 
+   
+print(grafico)
+```
