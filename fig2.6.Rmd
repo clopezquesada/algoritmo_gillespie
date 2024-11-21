@@ -140,13 +140,13 @@ PresaDepredador_Gillespie <- function(parametros,x0,t0,tf){
 ```
 
 ```{r}
-k1 <- 2
-k2 <- 0.1
-k3 <- 3
+k1 <- 0.005*3600
+k2 <- 0.0000027*3600
+k3 <- 0.008*3600
 parametros <- c(k1=k1,k2=k2,k3=k3) 
 # x0 <- c(k1/k2,k4/k3) # para tomar el valor inicial de la población en el equilibrio
-x0 <- c(50,5)
-tf <- 5
+x0 <- c(1000,1000)
+tf <- 1
 t0 <- 0
 
 graficoA <- ggplot()
@@ -173,11 +173,11 @@ out <- ode(y=state, times = times, func = presa_depredador_EDO, parms = parametr
 out <- data.frame(out)
 
 # Añadimos la solución de la EDO a los gráficos
-graficoA <- graficoA + geom_line(data=out, aes(x=time,y=A,color="Sol. mod. det."))
-graficoB <- graficoB + geom_line(data=out, aes(x=time,y=B,color="Sol. mod. det."))
+graficoA <- graficoA + geom_line(data=out, aes(x=time,y=A,color="Sol. mod. det."),lwd=0.5)
+graficoB <- graficoB + geom_line(data=out, aes(x=time,y=B,color="Sol. mod. det."),lwd=0.5)
 
 graficoA <- graficoA +
- labs(x = "Tiempo (s)", y = " Número de individuos de la especie X") +
+ labs(x = "Tiempo (h)", y = " Número de individuos de la especie X") +
  theme_minimal() +
  theme(legend.title=element_blank(),legend.position = "bottom",
       axis.title.x = element_text(size = 10),  
@@ -186,7 +186,7 @@ graficoA <- graficoA +
                     breaks = c("Realización", "Sol. mod. det."))
 
   graficoB <- graficoB +
- labs(x = "Tiempo (s)", y = " Número de individuos de la especie Y") +
+ labs(x = "Tiempo (h)", y = " Número de individuos de la especie Y") +
  theme_minimal() +
  theme(legend.title=element_blank(),legend.position = "bottom",
       axis.title.x = element_text(size = 10),  
