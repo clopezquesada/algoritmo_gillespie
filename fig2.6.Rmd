@@ -140,13 +140,13 @@ PresaDepredador_Gillespie <- function(parametros,x0,t0,tf){
 ```
 
 ```{r}
-k1 <- 0.005*3600
-k2 <- 0.0000027*3600
-k3 <- 0.008*3600
+k1 <- 0.005*60
+k2 <- 0.0000027*60
+k3 <- 0.008*60
 parametros <- c(k1=k1,k2=k2,k3=k3) 
 # x0 <- c(k1/k2,k4/k3) # para tomar el valor inicial de la población en el equilibrio
 x0 <- c(1000,1000)
-tf <- 1
+tf <- 60
 t0 <- 0
 
 graficoA <- ggplot()
