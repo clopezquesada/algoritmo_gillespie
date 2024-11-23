@@ -194,7 +194,7 @@ grafico2 <- ggplot(data=df_t2,aes(x=x,y=freq))+geom_line(data=df_t2,aes(x=x,y=fr
 n_realizaciones <- 49
 
 for (i in 1:n_realizaciones) {
-  df_aux <- FKPP_Gillespie(L=L,D=D,K=K,t0=t0,tf=tf,N=N,t_muestreo=t_muestreo)
+  df_aux <- FKPP_Gillespie(L=L,D=D,K=K,r=r,t0=t0,tf=tf,N=N,t_muestreo=t_muestreo)
   df_t1 <- cbind(df_t1, freq = df_aux$X1)
   df_t2 <- cbind(df_t2, freq = df_aux$X2)
 }
