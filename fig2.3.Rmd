@@ -69,11 +69,15 @@ Malthus_Gillespie<-function(r,x0,t0,tf){
     # Almacenamos el tiempo de reacción
     t_imprimir <- c(t_imprimir,t)
     
-    r2 <- runif(n=1, min=0, max=1)
-    if(r>0)
-      x_actual <- x_actual + 1
-    else
-      x_actual <- x_actual-1
+    if( t==Inf ){
+      x_actual <- 0
+    }else{
+      r2 <- runif(n=1, min=0, max=1)
+      if(r>0)
+        x_actual <- x_actual + 1
+      else
+        x_actual <- x_actual-1
+    }
     
     # Almacenamos el estado del sistema
     x <- c(x,x_actual)
