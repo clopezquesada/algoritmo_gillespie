@@ -104,7 +104,7 @@ sol_ec_maestra <- function(k1,k2,t,x){
 ```{r}
 x <- 1:100
 sol <- sol_ec_maestra(k1,k2,tf,x)
-x <- data.frame(x,aux)
+x <- data.frame(x, sol)
 
 grafico <- ggplot(data = datos, aes(x=datos, color="Dist. Número de Individuos")) + 
       geom_histogram(aes(y = ..density..), colour = 1, fill = "white") + geom_density() + 
