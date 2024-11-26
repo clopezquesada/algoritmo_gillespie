@@ -34,7 +34,7 @@ se trata de un caso de antagonismo (presa-depredador) puesto que los valores de
 los coeficientes de influencia cruzada tienen distinto signo, la presencia de B 
 favorece al desarrollo de A mientras que la presencia de A perjudica a la especie 
 B. Donde $X$ e $Y$ son el número de individuos de dos especies respectivamente, 
-en función del tiempo y $k_1$, $k_2$, $k_3$, $k_4>0$ son los 
+en función del tiempo y $k_1$, $k_2$, $k_3>0$ son los 
 parámetros de nacimiento y muerte de las especies del sistema.
 ```{r}
 presa_depredador_EDO <- function(t,state,parameters){
@@ -53,10 +53,10 @@ La función PresaDepredador_Gillespie implementa el siguiente proceso
   A\rightarrow 2A, \quad a_1=k_1A
 \]
 \[
-  A+B\rightarrow 2B, \quad a_3=k_2AB
+  A+B\rightarrow 2B, \quad a_2=k_2AB
 \]
 \[
-  B\rightarrow \emptyset, \quad a_4=k_3B
+  B\rightarrow \emptyset, \quad a_3=k_3B
 \]
 imprime, para cada tiempo de reacción, el estado del sistema hasta un tiempo 
 final.
@@ -144,7 +144,7 @@ k1 <- 2
 k2 <- 0.1
 k3 <- 3
 parametros <- c(k1=k1,k2=k2,k3=k3) 
-# x0 <- c(k1/k2,k4/k3) # para tomar el valor inicial de la población en el equilibrio
+# x0 <- c(k3/k2,k1/k2) # para tomar el valor inicial de la población en el equilibrio
 x0 <- c(50,5)
 tf <- 5
 t0 <- 0
