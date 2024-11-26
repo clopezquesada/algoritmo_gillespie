@@ -150,7 +150,7 @@ Difusion_Gillespie <- function(D,t0,tf,N,L,c1,c2,c3,c4,t_muestreo){
     
     if(r2<sum(a[1:(N-1)])/a0){ # Ocurre un salto hacia la derecha
       j <- 1
-      while ( (j<=N-1) & !(r2<sum(a[1:j])/a0)) 
+      while ( (j<N-1) & !(r2<sum(a[1:j])/a0)) 
         j <- j+1 
       x_actual[j] <- x_actual[j]-1
       x_actual[j+1] <- x_actual[j+1]+1
@@ -158,7 +158,7 @@ Difusion_Gillespie <- function(D,t0,tf,N,L,c1,c2,c3,c4,t_muestreo){
       a[j+1] <- x_actual[j+1]*d
     }else if(r2<(sum(a[1:(N-1)])+sum(a[2:N]))/a0){ # Ocurre un salto hacia la izquierda
       j <- 2
-      while((j<=N) & !(r2<(sum(a[1:(N-1)])+sum(a[2:j]))/a0))
+      while((j<N) & !(r2<(sum(a[1:(N-1)])+sum(a[2:j]))/a0))
         j <- j+1
       x_actual[j] <- x_actual[j]-1
       x_actual[j-1] <- x_actual[j-1]+1
