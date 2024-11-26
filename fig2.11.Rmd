@@ -26,14 +26,14 @@ tiempo_exponencial <- function(a0){
 La función NacimientoMuerte_Gillespie() devuelve una realización del modelo
 estocástico dado por las reacciónes (con sus correspondientes propensidades):
 \[
-  \emptyset\rightarrow X, \quad a_{\text{nacimiento}}=k_1
+  \emptyset\rightarrow X, \quad a_{\text{nacimiento}}=c_1
 \]
 \[
-  X\rightarrow \emptyset, \quad a_{\text{muerte}}=k_2X
+  X\rightarrow \emptyset, \quad a_{\text{muerte}}=c_2X
 \]
 
 ```{r}
-NacimientoMuerte_Gillespie <- function(k_1,k_2,x0,t0,tf){
+NacimientoMuerte_Gillespie <- function(c_1,c_2,x0,t0,tf){
   # Variables temporales
   t <- t0
   t_imprimir <- t0
@@ -42,7 +42,7 @@ NacimientoMuerte_Gillespie <- function(k_1,k_2,x0,t0,tf){
   x_actual <- x0
   
   # Cálculo de las propensidades y la suma de estas
-  a <- c(k1,k2*x_actual)
+  a <- c(c1,c2*x_actual)
   a0 <- sum(a)
 
   while(t<tf){
@@ -57,7 +57,7 @@ NacimientoMuerte_Gillespie <- function(k_1,k_2,x0,t0,tf){
       else
         x_actual <- x_actual-1
       
-      a[2] <- k2*x_actual
+      a[2] <- c2*x_actual
       a0 <- sum(a)
 
   }
@@ -71,8 +71,8 @@ NacimientoMuerte_Gillespie <- function(k_1,k_2,x0,t0,tf){
 
 
 ```{r}
-k1 <- 100
-k2 <- 2
+c1 <- 100
+c2 <- 2
 tf <- 30
 x0 <- 0
 t0 <- 0
