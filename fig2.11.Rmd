@@ -74,7 +74,7 @@ NacimientoMuerte_Gillespie <- function(k_1,k_2,x0,t0,tf){
 k1 <- 100
 k2 <- 2
 tf <- 30
-x0 <- 20
+x0 <- 0
 t0 <- 0
 
 # Número de realizaciones a realizar
