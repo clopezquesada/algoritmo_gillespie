@@ -45,7 +45,7 @@ Schnakenberg_EDO <- function(t,state,parameters){
 La función Schnackenberg_Gillespie() implementa el siguiente proceso 
 (junto con las propensidades correspondientes):
 \[
-  2A+B \rightarrow 3A, \quad a_1=\frac{1}{k_1}A(A-1)B,
+  2A+B \rightarrow 3A, \quad a_1=k_1A(A-1)B,
 \]
 \[
   A \rightarrow \emptyset, \quad a_2=k_2A,
