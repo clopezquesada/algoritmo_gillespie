@@ -34,7 +34,7 @@ se trata de un caso de antagonismo (presa-depredador) puesto que los valores de
 los coeficientes de influencia cruzada tienen distinto signo, la presencia de B 
 favorece al desarrollo de A mientras que la presencia de A perjudica a la especie 
 B. Donde $X$ e $Y$ son el número de individuos de dos especies respectivamente, 
-en función del tiempo y $k_1$, $k_2$, $k_3$, $k_4>0$ son los 
+en función del tiempo y $k_1$, $k_2$, $k_3>0$ son los 
 parámetros de nacimiento y muerte de las especies del sistema.
 ```{r}
 presa_depredador_EDO <- function(t,state,parameters){
