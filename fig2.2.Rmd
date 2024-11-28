@@ -145,12 +145,12 @@ funcion_t_muestreo <- function(t_muestreo,df){
 
 ```{r}
 
-r <- 0.009
+r <- 0.09
 k <- 100
 x0 <- 50
 t0 <- 0
 int <- 0.05
-tf <- 15*60
+tf <- 100
 t_muestreo <- seq(t0,tf,by=int)
 
 # Número de realizaciones a realizar
@@ -171,10 +171,10 @@ for (i in 1:n_realizaciones) {
   datos <- cbind(datos,x_muestreo) 
   
   # Mostramos únicamente las 10 primeras realizaciones de las 50 totales
-  if(i<=10){
+  if(i<=8){
     imprimir <- data.frame(t_muestreo=t_muestreo,x_muestreo=x_muestreo)
     grafico <- grafico + 
-      geom_line(data = imprimir, aes(x = t_muestreo/60, y = x_muestreo, color="Realizaciones"))
+      geom_line(data = imprimir, aes(x = t_muestreo, y = x_muestreo, color="Realizaciones"))
   }
 }
 
@@ -205,13 +205,13 @@ out <- data.frame(out)
 
 ```{r}
 
-grafico <- grafico + geom_line(lwd=0.7,data=datos_est,aes(x = t_muestreo/60, y = media,color="Media"))
-grafico <- grafico + geom_line(lwd=0.7,data=datos_est,aes(x = t_muestreo/60, y = media-desvtipica,color="Intervalo de confianza"))
-grafico <- grafico + geom_line(lwd=0.7,data=datos_est,aes(x = t_muestreo/60, y = media+desvtipica,color="Intervalo de confianza"))
-grafico <- grafico + geom_line(lwd=0.7,data=out,aes(x = time/60, y = X,color="Sol. mod. det."))
+grafico <- grafico + geom_line(lwd=0.7,data=datos_est,aes(x = t_muestreo, y = media,color="Media"))
+grafico <- grafico + geom_line(lwd=0.7,data=datos_est,aes(x = t_muestreo, y = media-desvtipica,color="Intervalo de confianza"))
+grafico <- grafico + geom_line(lwd=0.7,data=datos_est,aes(x = t_muestreo, y = media+desvtipica,color="Intervalo de confianza"))
+grafico <- grafico + geom_line(lwd=0.7,data=out,aes(x = time, y = X,color="Sol. mod. det."))
 
 grafico <- grafico +
-   labs(x = "Tiempo (min)", y = " Número de individuos") +
+   labs(x = "Tiempo", y = " Número de individuos") +
    theme_minimal() +
    theme(legend.title=element_blank(),legend.position = "bottom",
         axis.title.x = element_text(size = 10),  
