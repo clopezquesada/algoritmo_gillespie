@@ -33,7 +33,7 @@ estocástico dado por las reacciónes (con sus correspondientes propensidades):
 \]
 
 ```{r}
-NacimientoMuerte_Gillespie <- function(c_1,c_2,x0,t0,tf){
+NacimientoMuerte_Gillespie <- function(c1,c2,x0,t0,tf){
   # Variables temporales
   t <- t0
   t_imprimir <- t0
@@ -84,7 +84,7 @@ n_realizaciones <- 1000
 datos <- numeric()
 
 for (i in 1:n_realizaciones) {
-  realizacion <- NacimientoMuerte_Gillespie(k1,k2,x0,t0,tf)
+  realizacion <- NacimientoMuerte_Gillespie(c1,c2,x0,t0,tf)
   datos <- c(datos,realizacion)
 }
 
@@ -94,8 +94,8 @@ datos <- data.frame(datos)
 
 ```{r}
 # Función que devuelve la solución de la ecuación maestra del proceso
-sol_ec_maestra <- function(k1,k2,t,x){
-  lambda <- k1/k2*(1-exp(-k2*t))
+sol_ec_maestra <- function(c1,c2,t,x){
+  lambda <- c1/c2*(1-exp(-c2*t))
   return("s"=(exp(-lambda)*(lambda^x)/factorial(x)))
 }
 ```
@@ -107,7 +107,7 @@ sol <- sol_ec_maestra(k1,k2,tf,x)
 x <- data.frame(x, sol)
 
 grafico <- ggplot(data = datos, aes(x=datos, color="Dist. Número de Individuos")) + 
-      geom_histogram(aes(y = ..density..), colour = 1, fill = "white") + geom_density() + 
+      geom_histogram(aes(y = ..density..), colour = 1, fill = "white") + 
       geom_line(data=x, aes(x=x,y=sol, color="Sol. Ecuación Maestra")) +
       labs(x = "Número de individuos", y = " Densidad") + theme_minimal() +
       theme(legend.title=element_blank(),legend.position = "bottom",
