@@ -120,7 +120,7 @@ for(s in 2:n_realizaciones){
     geom_point(data = realizacion, aes(x=t_imprimir,y=x_imprimir), color=s, size=0.1)
 }
 
-grafico <- grafico + labs(title = element_blank(), x = "Tiempo (min)", y = "x [mm]") +
+grafico <- grafico + labs(title = element_blank(), x = "Tiempo", y = "x") +
    theme_minimal() 
    
 print(grafico)
