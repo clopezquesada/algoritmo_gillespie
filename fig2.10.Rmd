@@ -174,14 +174,14 @@ out <- data.frame(out)
 graficoA <- graficoA + geom_line(data=out, aes(x=time,y=X,color="Sol. mod. det."))
 graficoB <- graficoB + geom_line(data=out, aes(x=time,y=Y,color="Sol. mod. det."))
 
-graficoA <- graficoA + labs(title = element_blank(), x = "Tiempo (s)", y = " Número de moléculas de la especie X")+    theme_minimal() +
+graficoA <- graficoA + labs(title = element_blank(), x = "Tiempo", y = " Número de moléculas de la especie X")+ theme_minimal() +
  theme(legend.title=element_blank(),legend.position = "bottom",
       axis.title.x = element_text(size = 10),  
       axis.title.y = element_text(size = 10)) +
  scale_color_manual(values = c("Realización"="gray", "Sol. mod. det." = "red"),
                     breaks = c("Realización", "Sol. mod. det."))
 
-graficoB <- graficoB + labs(title = element_blank(), x = "Tiempo (s)", y = " Número de moléculas de la especie Y")+ theme_minimal() +
+graficoB <- graficoB + labs(title = element_blank(), x = "Tiempo", y = " Número de moléculas de la especie Y")+ theme_minimal() +
  theme(legend.title=element_blank(),legend.position = "bottom",
       axis.title.x = element_text(size = 10),  
       axis.title.y = element_text(size = 10)) +
