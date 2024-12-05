@@ -215,12 +215,12 @@ grafico1 <- grafico1 + geom_line(data=dfu_t1,aes(x=x,y=u,color="Sol. mod. det.")
 grafico2 <- grafico2 + geom_line(data=dfu_t2,aes(x=x,y=u,color="Sol. mod. det."))
 
 
-grafico1 <- grafico1 + labs(title = element_blank(), x = "x[mm]", y = "Concentración",subtitle = paste("T. f.=",t_muestreo[1],"s",sep=""))+ theme_minimal() +
+grafico1 <- grafico1 + labs(title = element_blank(), x = "x", y = "Concentración",subtitle = paste("T. f.=",t_muestreo[1],sep=""))+ theme_minimal() +
    theme(legend.title=element_blank(),legend.position = "bottom",axis.title.x = element_text(size = 9),  
         axis.title.y = element_text(size = 9)) + xlim(0,100) +
    scale_color_manual(values = c("Sol. mod. det." = "red", "Realizaciones"="grey", "Media"="blue", "Intervalo de confianza"="green" ), breaks = c("Realizaciones", "Media", "Intervalo de confianza", "Sol. mod. det."))
 
-grafico2 <- grafico2 + labs(title = element_blank(), x = "x[mm]", y = "Concentración",subtitle = paste("T. f.=",t_muestreo[2],"s",sep=""))+ theme_minimal() +
+grafico2 <- grafico2 + labs(title = element_blank(), x = "x", y = "Concentración",subtitle = paste("T. f.=",t_muestreo[2],sep=""))+ theme_minimal() +
    theme(legend.title=element_blank(),legend.position = "bottom",axis.title.x = element_text(size = 9),  
         axis.title.y = element_text(size = 9)) + xlim(0,100) +
    scale_color_manual(values = c("Sol. mod. det." = "red", "Realizaciones"="grey", "Media"="blue", "Intervalo de confianza"="green" ), breaks = c("Realizaciones", "Media", "Intervalo de confianza", "Sol. mod. det."))
