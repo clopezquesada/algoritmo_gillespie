@@ -70,7 +70,7 @@ Logistica1_Gillespie <- function(r,k,x0,t0,tf){
   t_imprimir <- t0
   
   # Cálculo de las propensidades individuales y de la propensidad total  
-  a <- c(r*x_actual,(r*x_actual*(x_actual-1))/2*k)
+  a <- c(r*x_actual,(r*x_actual*(x_actual-1))/k)
   a0 <- sum(a)
 
   while(t<tf){ 
