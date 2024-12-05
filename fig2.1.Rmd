@@ -118,7 +118,7 @@ for (i in 1:n_realizaciones) {
 
 ```{r}
 
-grafico <- grafico + labs(title = element_blank(), x = "Tiempo (s)", y = " Número de individuos") +
+grafico <- grafico + labs(title = element_blank(), x = "Tiempo", y = " Número de individuos") +
   coord_cartesian(xlim = c(0, tf)) +
   theme_minimal() + 
   theme(legend.title=element_blank(),legend.position = "bottom",axis.title.x = element_text(size = 10), axis.title.y = element_text(size = 10)) + 
