@@ -177,7 +177,7 @@ graficoA <- graficoA + geom_line(data=out, aes(x=time,y=A,color="Sol. mod. det."
 graficoB <- graficoB + geom_line(data=out, aes(x=time,y=B,color="Sol. mod. det."))
 
 graficoA <- graficoA +
- labs(x = "Tiempo (s)", y = " Número de individuos de la especie X") +
+ labs(x = "Tiempo", y = " Número de individuos de la especie X") +
  theme_minimal() +
  theme(legend.title=element_blank(),legend.position = "bottom",
       axis.title.x = element_text(size = 10),  
@@ -186,7 +186,7 @@ graficoA <- graficoA +
                     breaks = c("Realización", "Sol. mod. det."))
 
   graficoB <- graficoB +
- labs(x = "Tiempo (s)", y = " Número de individuos de la especie Y") +
+ labs(x = "Tiempo", y = " Número de individuos de la especie Y") +
  theme_minimal() +
  theme(legend.title=element_blank(),legend.position = "bottom",
       axis.title.x = element_text(size = 10),  
