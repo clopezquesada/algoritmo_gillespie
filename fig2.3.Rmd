@@ -138,7 +138,7 @@ grafico <- grafico + geom_line(lwd=0.5,data=out,aes(x = time, y = X, color= "Sol
 
 ```{r}
 grafico <- grafico +
-   labs(x = "Tiempo (s)", y = " Número de partículas") + coord_cartesian(xlim = c(0, tf)) +
+   labs(x = "Tiempo", y = " Número de partículas") + coord_cartesian(xlim = c(0, tf)) +
    theme_minimal() +
    theme(legend.title=element_blank(),legend.position = "bottom",
         axis.title.x = element_text(size = 10),  
